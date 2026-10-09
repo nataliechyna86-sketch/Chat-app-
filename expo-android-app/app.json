@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "ChatPulse",
+    "slug": "chatpulse",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#7c3aed"
+      },
+      "package": "com.chatpulse.videochat",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.INTERNET"
+      ]
+    },
+    "plugins": [
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Allow ChatPulse to access your camera for video chat.",
+          "microphonePermission": "Allow ChatPulse to access your microphone for voice."
+        }
+      ]
+    ]
+  }
+}

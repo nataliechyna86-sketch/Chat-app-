@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="128" fill="#7c3aed"/>
+  <rect x="40" y="40" width="432" height="432" rx="100" fill="url(#grad)" fill-opacity="0.2"/>
+  <defs>
+    <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </linearGradient>
+  </defs>
+  <!-- Video Camera Icon -->
+  <path d="M128 176 C128 158 142 144 160 144 L304 144 C322 144 336 158 336 176 L336 336 C336 354 322 368 304 368 L160 368 C142 368 128 354 128 336 Z" fill="#ffffff"/>
+  <path d="M336 216 L416 168 C426 162 438 170 438 182 L438 330 C438 342 426 350 416 344 L336 296 Z" fill="#ede9fe"/>
+  <!-- Pulse Dot -->
+  <circle cx="200" cy="200" r="16" fill="#10b981"/>
+</svg>

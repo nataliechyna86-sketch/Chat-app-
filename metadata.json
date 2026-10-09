@@ -1,0 +1,9 @@
+{
+  "name": "ChatPulse - Random Video Chat",
+  "description": "Instant 1-on-1 random video chat with live WebRTC streaming, instant matchmaking, video filters, and real-time messaging.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
