@@ -17,7 +17,7 @@ jobs:
   build-android:
     name: 📱 Build Android APK
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
 
     steps:
       - name: 🛎️ Checkout Repository
@@ -36,28 +36,19 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'expo-android-app/package.json'
 
-      - name: 📱 Set up Android SDK & NDK
+      - name: 📱 Set up Android SDK Tools
+        uses: android-actions/setup-android@v3
+
+      - name: 📝 Accept Android SDK Licenses
         run: |
-          echo "Android Home: $ANDROID_HOME"
-          # Accept all Android SDK licenses
+          mkdir -p "$ANDROID_HOME/licenses"
+          echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-license"
           yes | sdkmanager --licenses || true
-          # Install the specific NDK and build-tools required by React Native / WebRTC
-          sdkmanager "ndk;26.1.10909125" "build-tools;35.0.0" "platforms;android-35" "cmake;3.22.1" || true
 
       - name: 📦 Install Expo App Dependencies
         working-directory: expo-android-app
         run: |
           npm install --legacy-peer-deps
-
-      - name: ⚙️ Verify Native Android Code (Expo Prebuild)
-        working-directory: expo-android-app
-        run: |
-          # If android directory doesn't exist, generate it cleanly
-          if [ ! -d "android" ]; then
-            npx expo prebuild --platform android --no-install
-          else
-            echo "Native Android project already generated and configured."
-          fi
 
       - name: 🐘 Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -68,13 +59,12 @@ jobs:
         working-directory: expo-android-app/android
         run: |
           chmod +x gradlew
-          # Build installable universal debug APK with 4GB heap
           ./gradlew assembleDebug --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
 
       - name: 🔍 Locate Generated APK
         id: locate_apk
         run: |
-          echo "Listing all generated APK files:"
+          echo "Searching for generated APK files..."
           find expo-android-app/android/app/build/outputs/apk -type f -name "*.apk" -ls
           
           PRIMARY_APK=$(find expo-android-app/android/app/build/outputs/apk -type f -name "*.apk" | head -n 1)
@@ -89,11 +79,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ChatPulse-Android-APK
-          path: expo-android-app/android/app/build/outputs/apk/**/*.apk
+          path: ${{ steps.locate_apk.outputs.apk_path }}
           if-no-files-found: error
           retention-days: 30
 
-      - name: 📋 Job Summary
+      - name: 📋 Build Summary
         run: |
           echo "### 🚀 Android APK Build Succeeded!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -102,4 +92,4 @@ jobs:
           echo "- **Package**: \`com.chatpulse.videochat\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Permissions**: Camera, Microphone, Network" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "You can download the APK directly from the **Summary / Artifacts** section of this GitHub Actions run and install it on your Android phone!" >> $GITHUB_STEP_SUMMARY
+          echo "You can download the APK directly from the **Artifacts** section of this GitHub Actions run and install it on your Android phone!" >> $GITHUB_STEP_SUMMARY
