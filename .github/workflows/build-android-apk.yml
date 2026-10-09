@@ -29,9 +29,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 📱 Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: 🟢 Set up Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -39,40 +36,48 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'expo-android-app/package.json'
 
+      - name: 📱 Set up Android SDK & NDK
+        run: |
+          echo "Android Home: $ANDROID_HOME"
+          # Accept all Android SDK licenses
+          yes | sdkmanager --licenses || true
+          # Install the specific NDK and build-tools required by React Native / WebRTC
+          sdkmanager "ndk;26.1.10909125" "build-tools;35.0.0" "platforms;android-35" "cmake;3.22.1" || true
+
       - name: 📦 Install Expo App Dependencies
         working-directory: expo-android-app
         run: |
           npm install --legacy-peer-deps
 
-      - name: ⚙️ Generate Native Android Code (Expo Prebuild)
+      - name: ⚙️ Verify Native Android Code (Expo Prebuild)
         working-directory: expo-android-app
         run: |
-          npx expo prebuild --platform android --clean --no-install
+          # If android directory doesn't exist, generate it cleanly
+          if [ ! -d "android" ]; then
+            npx expo prebuild --platform android --no-install
+          else
+            echo "Native Android project already generated and configured."
+          fi
 
-      - name: 🐘 Cache Gradle dependencies
-        uses: actions/cache@v4
+      - name: 🐘 Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('expo-android-app/android/**/*.gradle*', 'expo-android-app/android/gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          cache-read-only: false
 
       - name: 🔨 Build Android APK with Gradle
         working-directory: expo-android-app/android
         run: |
           chmod +x gradlew
-          # Build installable debug APK (compatible with all Android devices without custom keystore)
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          # Build installable universal debug APK with 4GB heap
+          ./gradlew assembleDebug --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
 
       - name: 🔍 Locate Generated APK
         id: locate_apk
         run: |
           echo "Listing all generated APK files:"
-          find expo-android-app/android/app/build/outputs/apk -name "*.apk" -ls
+          find expo-android-app/android/app/build/outputs/apk -type f -name "*.apk" -ls
           
-          PRIMARY_APK=$(find expo-android-app/android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          PRIMARY_APK=$(find expo-android-app/android/app/build/outputs/apk -type f -name "*.apk" | head -n 1)
           if [ -z "$PRIMARY_APK" ]; then
             echo "::error::No APK file found in build output!"
             exit 1
@@ -94,7 +99,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Your installable Android APK is ready." >> $GITHUB_STEP_SUMMARY
           echo "- **Artifact Name**: \`ChatPulse-Android-APK\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Architecture**: Universal Android (ARM64 / x86_64)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package**: \`com.chatpulse.videochat\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Permissions**: Camera, Microphone, Network" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "You can download the APK directly from the **Summary** tab of this GitHub Actions run and install it on your Android phone!" >> $GITHUB_STEP_SUMMARY
+          echo "You can download the APK directly from the **Summary / Artifacts** section of this GitHub Actions run and install it on your Android phone!" >> $GITHUB_STEP_SUMMARY
