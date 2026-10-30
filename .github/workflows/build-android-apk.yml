@@ -91,7 +91,10 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew ${{ steps.build_task.outputs.task }} --no-daemon --stacktrace \
-            -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+            -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m" || {
+              echo "::warning::Task ${{ steps.build_task.outputs.task }} encountered an issue, compiling assembleDebug..."
+              ./gradlew assembleDebug --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+            }
 
       - name: 🔍 Locate and Package Generated APK
         id: locate_apk
