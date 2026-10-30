@@ -5,11 +5,11 @@ import {
   Check,
   Copy,
   X,
-  Layers,
-  ArrowRight,
-  ShieldCheck,
-  Code2,
+  Globe,
+  Server,
+  Cloud,
   Terminal,
+  ExternalLink,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -26,7 +26,7 @@ export const InstallAndroidModal: React.FC<InstallAndroidModalProps> = ({
   deferredPrompt,
   onInstallPWA,
 }) => {
-  const [activeTab, setActiveTab] = useState<'instant' | 'reactNative'>('instant');
+  const [activeTab, setActiveTab] = useState<'instant' | 'hosting' | 'reactNative'>('hosting');
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [qrUrl, setQrUrl] = useState('');
@@ -50,28 +50,15 @@ export const InstallAndroidModal: React.FC<InstallAndroidModalProps> = ({
 
   if (!isOpen) return null;
 
-  const expoConfigCode = `// 1. Terminal commands to create your native APK:
-npx create-expo-app chatpulse-mobile
-cd chatpulse-mobile
-npx expo install react-native-webrtc @config-plugins/react-native-webrtc
+  const expoConfigCode = `# 1. Push code to your GitHub repo's main branch:
+git add .
+git commit -m "Build Android APK"
+git push origin main
 
-// 2. Add to app.json plugins:
-{
-  "expo": {
-    "name": "ChatPulse",
-    "slug": "chatpulse",
-    "android": {
-      "package": "com.chatpulse.videochat",
-      "permissions": ["CAMERA", "RECORD_AUDIO", "MODIFY_AUDIO_SETTINGS"]
-    },
-    "plugins": [
-      ["@config-plugins/react-native-webrtc"]
-    ]
-  }
-}
+# 2. GitHub Actions will automatically run:
+# .github/workflows/build-android-apk.yml
 
-// 3. Build standalone APK file directly:
-npx eas-cli build -p android --profile preview`;
+# 3. Download ChatPulse-Android-APK from the Actions tab on GitHub!`;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(expoConfigCode);
@@ -87,54 +74,137 @@ npx eas-cli build -p android --profile preview`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white border border-purple-100 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative text-slate-900 flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="bg-[#FEF7FF] border border-[#CAC4D0]/60 rounded-[28px] max-w-lg w-full p-5 sm:p-6 shadow-2xl relative text-[#1D1B20] flex flex-col max-h-[90vh] overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-purple-100 shrink-0">
+        <div className="flex items-center justify-between pb-3 border-b border-[#CAC4D0]/40 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-2xl bg-purple-100 text-purple-700">
-              <Smartphone className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-[14px] bg-[#EADDFF] flex items-center justify-center text-[#21005D]">
+              <Globe className="w-5 h-5 text-[#6750A4]" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-slate-900">Install on Your Android Phone</h3>
-              <p className="text-xs text-purple-600 font-medium">Native App Experience</p>
+              <h3 className="font-semibold text-base text-[#1D1B20]">Website & App Hosting</h3>
+              <p className="text-xs text-[#49454F] font-medium">Free hosting options & direct access</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-purple-400 hover:text-purple-700 hover:bg-purple-50 transition-colors"
+            className="w-9 h-9 rounded-full text-[#49454F] hover:bg-[#1D1B20]/8 flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex bg-purple-50 p-1 rounded-2xl border border-purple-200 mt-4 shrink-0">
+        {/* Material 3 Segmented Buttons / Tab Switcher */}
+        <div className="flex bg-[#ECE6F0] p-1 rounded-full border border-[#CAC4D0]/50 mt-4 shrink-0 gap-1">
           <button
-            onClick={() => setActiveTab('instant')}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-              activeTab === 'instant'
-                ? 'bg-purple-600 text-white shadow-xs'
-                : 'text-purple-700 hover:text-purple-950'
+            onClick={() => setActiveTab('hosting')}
+            className={`flex-1 py-2 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+              activeTab === 'hosting'
+                ? 'bg-[#6750A4] text-white shadow-xs'
+                : 'text-[#49454F] hover:text-[#1D1B20]'
             }`}
           >
-            📱 1-Tap Android Install
+            🌐 Free Web Hosting
+          </button>
+          <button
+            onClick={() => setActiveTab('instant')}
+            className={`flex-1 py-2 text-xs font-semibold rounded-full transition-all cursor-pointer ${
+              activeTab === 'instant'
+                ? 'bg-[#6750A4] text-white shadow-xs'
+                : 'text-[#49454F] hover:text-[#1D1B20]'
+            }`}
+          >
+            📱 Phone Install
           </button>
           <button
             onClick={() => setActiveTab('reactNative')}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+            className={`flex-1 py-2 text-xs font-semibold rounded-full transition-all cursor-pointer ${
               activeTab === 'reactNative'
-                ? 'bg-purple-600 text-white shadow-xs'
-                : 'text-purple-700 hover:text-purple-950'
+                ? 'bg-[#6750A4] text-white shadow-xs'
+                : 'text-[#49454F] hover:text-[#1D1B20]'
             }`}
           >
-            ⚛️ React Native / APK
+            ⚛️ Native APK
           </button>
         </div>
 
         {/* Body content */}
         <div className="overflow-y-auto py-4 space-y-4 text-xs flex-1">
-          {activeTab === 'instant' ? (
+          {activeTab === 'hosting' ? (
+            <div className="space-y-4">
+              
+              {/* Option 1: Right Here (Already Live for Free!) */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-50 via-white to-indigo-50 border-2 border-purple-300 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-sm text-purple-950">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Hosted Right Here (Already Live & Free!)</span>
+                  </div>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                    Active 24/7
+                  </span>
+                </div>
+                
+                <p className="text-slate-600 text-xs leading-relaxed">
+                  Your website is <strong>already hosted for free on Google Cloud Run</strong> with full HTTPS, camera/mic permissions, and real-time WebSockets enabled. You can share this link with anyone right now:
+                </p>
+
+                {/* Direct Link Box */}
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="text"
+                    readOnly
+                    value={currentUrl}
+                    className="flex-1 bg-white border border-purple-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-mono select-all focus:outline-none"
+                  />
+                  <button
+                    onClick={handleCopyLink}
+                    className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs flex items-center gap-1.5"
+                  >
+                    {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedLink ? 'Copied!' : 'Copy Link'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Option 2: Deploying to Other Free Hosts */}
+              <div className="space-y-2.5">
+                <h4 className="font-bold text-xs text-purple-950">Other Free Hosting Platforms:</h4>
+
+                <div className="p-3 rounded-2xl bg-purple-50/50 border border-purple-200 flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-white border border-purple-200 text-purple-700 shrink-0">
+                    <Cloud className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-slate-900">Render.com (Free Tier)</span>
+                      <span className="text-[10px] text-purple-700 font-semibold">1-Click deploy</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Connect your GitHub repo to Render &rarr; select <strong>Web Service</strong>. We’ve included a pre-configured <code className="bg-purple-100 px-1 rounded text-purple-900 font-mono">render.yaml</code> for automatic free setup!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-purple-50/50 border border-purple-200 flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-white border border-purple-200 text-purple-700 shrink-0">
+                    <Server className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-slate-900">Railway / Fly.io / Koyeb</span>
+                      <span className="text-[10px] text-purple-700 font-semibold">Free Docker tier</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      We’ve added a production <code className="bg-purple-100 px-1 rounded text-purple-900 font-mono">Dockerfile</code> in the repository. Connect your repo and it builds both frontend & backend automatically.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          ) : activeTab === 'instant' ? (
             <div className="space-y-4">
               
               {/* Highlight card */}
@@ -146,7 +216,7 @@ npx eas-cli build -p android --profile preview`;
                   </span>
                 </div>
                 <p className="text-slate-600 text-xs leading-relaxed">
-                  Android supports installing this app as a standalone WebAPK. It gives you an app icon on your home screen, launches in full screen with no browser bars, and accesses your camera & mic natively!
+                  Android and iOS support installing this website directly to your home screen as a standalone app with full camera and microphone access!
                 </p>
 
                 {deferredPrompt ? (
@@ -168,29 +238,13 @@ npx eas-cli build -p android --profile preview`;
                   ) : null}
                 </div>
                 <div className="text-center sm:text-left space-y-1">
-                  <h4 className="font-bold text-xs text-slate-900">Scan on your Android Phone:</h4>
+                  <h4 className="font-bold text-xs text-slate-900">Scan on your Phone:</h4>
                   <ol className="list-decimal pl-4 text-[11px] text-slate-600 space-y-1">
                     <li>Scan this QR code with your phone camera.</li>
-                    <li>In Chrome, tap the <strong>⋮ menu</strong> at top right.</li>
-                    <li>Tap <strong>"Install app"</strong> (or "Add to Home screen").</li>
+                    <li>In Chrome/Safari, tap the <strong>Menu / Share</strong> icon.</li>
+                    <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home Screen"</strong>.</li>
                   </ol>
                 </div>
-              </div>
-
-              {/* Copy link */}
-              <div className="flex gap-1.5">
-                <input
-                  type="text"
-                  readOnly
-                  value={currentUrl}
-                  className="flex-1 bg-purple-50/40 border border-purple-200 rounded-xl px-3 py-2 text-[11px] text-slate-700 font-mono select-all focus:outline-none"
-                />
-                <button
-                  onClick={handleCopyLink}
-                  className="px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs"
-                >
-                  {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
               </div>
 
             </div>
@@ -208,14 +262,13 @@ npx eas-cli build -p android --profile preview`;
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Every time you push code to the <code className="bg-purple-100 px-1 py-0.5 rounded text-purple-900 font-semibold">main</code> branch, GitHub Actions will automatically compile the native Android code and produce an installable <strong>.apk</strong> artifact!
+                  Every time you push code to your <code className="bg-purple-100 px-1 py-0.5 rounded text-purple-900 font-semibold">main</code> branch on GitHub, GitHub Actions compiles the native Android code and generates an installable <strong>.apk</strong> artifact!
                 </p>
 
                 <div className="p-2.5 bg-white rounded-xl border border-purple-100 space-y-1.5 text-[11px] text-slate-700">
-                  <span className="font-bold text-purple-950">How to get your APK on GitHub:</span>
+                  <span className="font-bold text-purple-950">Where to find your APK on GitHub:</span>
                   <ol className="list-decimal pl-4 space-y-1 text-slate-600">
-                    <li>Push code to the <code className="text-purple-700 font-mono">main</code> branch.</li>
-                    <li>Go to your GitHub repo &rarr; click the <strong>Actions</strong> tab.</li>
+                    <li>Go to your repo on GitHub &rarr; click the <strong>Actions</strong> tab.</li>
                     <li>Click the latest <strong>"Build Android APK"</strong> run.</li>
                     <li>Under <strong>Artifacts</strong>, download <strong className="text-purple-700">ChatPulse-Android-APK</strong>!</li>
                   </ol>
@@ -227,7 +280,7 @@ npx eas-cli build -p android --profile preview`;
                 <div className="flex items-center justify-between bg-slate-900 text-slate-200 px-3 py-2 rounded-t-xl text-[11px] font-mono">
                   <div className="flex items-center gap-1.5 text-purple-300">
                     <Terminal className="w-3.5 h-3.5" />
-                    <span>Manual / Local Build Commands</span>
+                    <span>Git Push Commands</span>
                   </div>
                   <button
                     onClick={handleCopyCode}
@@ -251,7 +304,7 @@ npx eas-cli build -p android --profile preview`;
 
         <button
           onClick={onClose}
-          className="w-full py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-all cursor-pointer shrink-0"
+          className="w-full h-11 rounded-full bg-[#6750A4] hover:bg-[#594291] text-white font-semibold text-xs shadow-md shadow-[#6750A4]/25 transition-all active:scale-98 cursor-pointer shrink-0"
         >
           Close
         </button>

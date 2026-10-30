@@ -1,22 +1,22 @@
 {
   "expo": {
-    "name": "ChatPulse",
-    "slug": "chatpulse",
+    "name": "mochii",
+    "slug": "mochii",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#6538F6"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#7c3aed"
+        "backgroundColor": "#6538F6"
       },
-      "package": "com.chatpulse.videochat",
+      "package": "com.mochii.videochat",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -24,6 +24,14 @@
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.INTERNET"
       ]
-    }
+    },
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713"
+        }
+      ]
+    ]
   }
 }

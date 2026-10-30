@@ -72,7 +72,7 @@ async function startServer() {
   function broadcastPresence() {
     const payload = JSON.stringify({
       type: 'presence',
-      onlineCount: Math.max(1, clients.size),
+      onlineCount: clients.size,
       waitingCount: queue.length,
     });
 

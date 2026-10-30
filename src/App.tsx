@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Header } from './components/Header';
 import { SetupScreen } from './components/SetupScreen';
 import { VideoArea } from './components/VideoArea';
 import { ControlBar } from './components/ControlBar';
@@ -10,6 +9,10 @@ import { SafetyModal } from './components/SafetyModal';
 import { TwoDevicesModal } from './components/TwoDevicesModal';
 import { InstallAndroidModal } from './components/InstallAndroidModal';
 import { MobileFrame } from './components/MobileFrame';
+import { SplashScreen } from './components/SplashScreen';
+import { OnboardingScreen } from './components/OnboardingScreen';
+import { ConnectingScreen } from './components/ConnectingScreen';
+import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { useWebRTC } from './hooks/useWebRTC';
 import { sounds } from './utils/soundEffects';
 import { createSimulatedVideoStream } from './utils/videoCanvas';
@@ -29,10 +32,17 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
-  const [onlineCount, setOnlineCount] = useState(1342);
-  const [waitingCount, setWaitingCount] = useState(24);
+  const [onlineCount, setOnlineCount] = useState(1);
+  const [waitingCount, setWaitingCount] = useState(1);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // App Flows matching 8 Mochii Screens
+  const [showSplash, setShowSplash] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem('mochii_onboarded_completed');
+  });
+  const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
 
   // Modals
   const [isEffectsOpen, setIsEffectsOpen] = useState(false);
@@ -65,9 +75,9 @@ export default function App() {
 
   // User Profile
   const [profile, setProfile] = useState<UserProfile>(() => ({
-    username: `User_${Math.floor(100 + Math.random() * 900)}`,
+    username: 'mochii',
     country: 'United States',
-    interests: ['gaming', 'music'],
+    interests: ['music', 'gaming'],
     filter: 'none',
     overlay: 'none',
     mirrorLocal: true,
@@ -111,6 +121,16 @@ export default function App() {
 
   // Connect WebSocket
   useEffect(() => {
+    // Fetch live real server stats immediately
+    fetch('/api/stats')
+      .then(res => res.json())
+      .then(data => {
+        if (typeof data.onlineUsers === 'number') {
+          setOnlineCount(data.onlineUsers);
+        }
+      })
+      .catch(() => {});
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     const ws = new WebSocket(wsUrl);
@@ -142,7 +162,7 @@ export default function App() {
 
           case 'presence': {
             if (typeof msg.onlineCount === 'number') {
-              setOnlineCount(1200 + msg.onlineCount * 8);
+              setOnlineCount(msg.onlineCount);
             }
             if (typeof msg.waitingCount === 'number') {
               setWaitingCount(msg.waitingCount);
@@ -178,7 +198,7 @@ export default function App() {
               {
                 id: `sys_${Date.now()}`,
                 sender: 'system',
-                text: `Connected with ${partner.name} from ${partner.country}!`,
+                text: `Connected with ${partner.name}!`,
                 timestamp: Date.now(),
               },
             ]);
@@ -336,6 +356,8 @@ export default function App() {
         country: profile.country,
         interests: profile.interests,
       }));
+    } else {
+      setConnectionState('searching');
     }
   };
 
@@ -472,39 +494,72 @@ export default function App() {
   }, [connectionState]);
 
   return (
-    <div className="font-sans">
+    <div className="font-sans antialiased text-white selection:bg-[#6538F6] selection:text-white">
       <MobileFrame>
-        {/* Mobile Header */}
-        <Header
-          onlineCount={onlineCount}
-          waitingCount={waitingCount}
-          soundEnabled={profile.soundEnabled}
-          onToggleSound={() => setProfile(p => ({ ...p, soundEnabled: !p.soundEnabled }))}
-          onOpenSafetyGuide={() => setIsSafetyOpen(true)}
-          onOpenTwoDevicesModal={() => setIsTwoDevicesOpen(true)}
-          onOpenInstallModal={() => setIsInstallModalOpen(true)}
+        {/* Screen 1: Mochii Loading Splash Screen */}
+        {showSplash && (
+          <SplashScreen
+            onFinish={() => setShowSplash(false)}
+            onlineCount={onlineCount}
+          />
+        )}
+
+        {/* Screen 2, 3, 4: Mochii Onboarding 3-step carousel */}
+        {showOnboarding && !showSplash && (
+          <OnboardingScreen
+            onFinish={() => {
+              localStorage.setItem('mochii_onboarded_completed', 'true');
+              setShowOnboarding(false);
+            }}
+          />
+        )}
+
+        {/* Screen 8: Mochii Profile & Settings Screen */}
+        <ProfileSettingsModal
+          isOpen={isProfileSettingsOpen}
+          onClose={() => setIsProfileSettingsOpen(false)}
+          profile={profile}
+          onUpdateProfile={(updates) => {
+            setProfile(p => ({ ...p, ...updates }));
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+              wsRef.current.send(JSON.stringify({
+                type: 'update_profile',
+                username: updates.username ?? profile.username,
+                country: updates.country ?? profile.country,
+                interests: updates.interests ?? profile.interests,
+              }));
+            }
+          }}
+          onReplayOnboarding={() => {
+            setShowOnboarding(true);
+          }}
+          onOpenTwoDevices={() => {
+            setIsTwoDevicesOpen(true);
+          }}
         />
 
-        {/* Main Content Area */}
+        {/* Main Mochii Experience */}
         {connectionState === 'idle' ? (
+          /* Screen 5: Home / Waiting Screen */
           <SetupScreen
             profile={profile}
             onUpdateProfile={(updates) => setProfile(p => ({ ...p, ...updates }))}
             onStartMatching={handleStartMatching}
-            onStartSoloPractice={handleStartSoloPractice}
-            onOpenTwoDevicesModal={() => setIsTwoDevicesOpen(true)}
-            onOpenInstallModal={() => setIsInstallModalOpen(true)}
+            onOpenSettings={() => setIsProfileSettingsOpen(true)}
+            onOpenTwoDevices={() => setIsTwoDevicesOpen(true)}
             localStream={localStream}
             isAudioMuted={isAudioMuted}
             isVideoMuted={isVideoMuted}
             onToggleAudio={toggleAudio}
             onToggleVideo={toggleVideo}
             onlineCount={onlineCount}
-            waitingCount={waitingCount}
           />
+        ) : connectionState === 'searching' || connectionState === 'connecting' ? (
+          /* Screen 6: Connecting Screen */
+          <ConnectingScreen onCancel={handleStop} />
         ) : (
-          <div className="flex-1 flex flex-col overflow-hidden relative min-h-0 bg-white">
-            {/* Live Video Streams */}
+          /* Screen 7: Active Video Chat Screen */
+          <div className="flex-1 flex flex-col overflow-hidden relative min-h-0 bg-[#120E28]">
             <VideoArea
               connectionState={connectionState}
               partnerInfo={partnerInfo}
@@ -537,30 +592,28 @@ export default function App() {
               onTyping={handleTyping}
               isCallConnected={connectionState === 'connected'}
             />
-          </div>
-        )}
 
-        {/* In-Call Mobile Dock */}
-        {connectionState !== 'idle' && (
-          <ControlBar
-            connectionState={connectionState}
-            isAudioMuted={isAudioMuted}
-            isVideoMuted={isVideoMuted}
-            canSwitchCamera={availableCameras.length > 1}
-            isChatOpen={isChatOpen}
-            unreadCount={unreadCount}
-            onSkip={handleSkip}
-            onStop={handleStop}
-            onStart={handleStartMatching}
-            onToggleAudio={toggleAudio}
-            onToggleVideo={toggleVideo}
-            onSwitchCamera={switchCamera}
-            onOpenEffects={() => setIsEffectsOpen(true)}
-            onToggleChat={() => {
-              setIsChatOpen(v => !v);
-              setUnreadCount(0);
-            }}
-          />
+            {/* Screen 7 Floating Controls Bar */}
+            <ControlBar
+              connectionState={connectionState}
+              isAudioMuted={isAudioMuted}
+              isVideoMuted={isVideoMuted}
+              canSwitchCamera={availableCameras.length > 1}
+              isChatOpen={isChatOpen}
+              unreadCount={unreadCount}
+              onSkip={handleSkip}
+              onStop={handleStop}
+              onStart={handleStartMatching}
+              onToggleAudio={toggleAudio}
+              onToggleVideo={toggleVideo}
+              onSwitchCamera={switchCamera}
+              onOpenEffects={() => setIsEffectsOpen(true)}
+              onToggleChat={() => {
+                setIsChatOpen(v => !v);
+                setUnreadCount(0);
+              }}
+            />
+          </div>
         )}
       </MobileFrame>
 

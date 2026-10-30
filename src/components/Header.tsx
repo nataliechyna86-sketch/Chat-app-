@@ -1,86 +1,111 @@
 import React from 'react';
-import { Video, Volume2, VolumeX, Shield, Users, QrCode } from 'lucide-react';
+import { Video, Volume2, VolumeX, Shield, QrCode, Monitor, Smartphone, Share2 } from 'lucide-react';
 
 interface HeaderProps {
   onlineCount: number;
   waitingCount: number;
   soundEnabled: boolean;
+  isWideLayout: boolean;
+  onToggleWideLayout: () => void;
   onToggleSound: () => void;
   onOpenSafetyGuide: () => void;
   onOpenTwoDevicesModal: () => void;
   onOpenInstallModal: () => void;
+  onShowSplash?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onlineCount,
   waitingCount,
   soundEnabled,
+  isWideLayout,
+  onToggleWideLayout,
   onToggleSound,
   onOpenSafetyGuide,
   onOpenTwoDevicesModal,
   onOpenInstallModal,
+  onShowSplash,
 }) => {
   return (
-    <header className="h-14 px-3 sm:px-4 bg-white/95 backdrop-blur-md border-b border-purple-100 flex items-center justify-between select-none z-30 shrink-0">
-      {/* Brand */}
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center shadow-md shadow-purple-500/20">
-          <Video className="w-4 h-4 text-white" />
-        </div>
-        <div>
+    // Jetpack Compose TopAppBar (Material 3 standard 64dp height)
+    <header className="h-16 px-3 sm:px-4 bg-[#FEF7FF] border-b border-[#CAC4D0]/40 flex items-center justify-between select-none z-30 shrink-0">
+      {/* Navigation Icon & Title Group */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        <button
+          onClick={onShowSplash}
+          className="w-10 h-10 rounded-[14px] bg-[#6750A4] hover:bg-[#594291] active:scale-95 flex items-center justify-center text-white shadow-sm shadow-[#6750A4]/25 shrink-0 transition-all cursor-pointer"
+          title="Replay Loading Splash Screen"
+        >
+          <Video className="w-5 h-5 fill-current" />
+        </button>
+        
+        <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-base tracking-tight text-slate-900">
+            <h1 className="font-semibold text-lg text-[#1D1B20] tracking-tight truncate">
               ChatPulse
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Live
+            </h1>
+            
+            {/* Material 3 Tonal Status Badge */}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E8DEF8] text-[#21005D] text-[10px] font-bold shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#388E3C] animate-pulse" />
+              <span>Live</span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Action Controls */}
-      <div className="flex items-center gap-1.5">
-        {/* Install Android App Button */}
+      {/* Jetpack Compose TopAppBar Actions */}
+      <div className="flex items-center gap-1 shrink-0">
+        {/* Toggle Website Wide / Phone Frame on desktop */}
+        <button
+          onClick={onToggleWideLayout}
+          className="hidden md:flex items-center gap-1.5 h-9 px-3 rounded-full bg-[#F3EDF7] hover:bg-[#E8DEF8] text-[#49454F] hover:text-[#21005D] text-xs font-medium transition-all active:scale-95 cursor-pointer"
+          title={isWideLayout ? 'Switch to Compact Mobile View' : 'Switch to Wide View'}
+        >
+          {isWideLayout ? <Smartphone className="w-4 h-4 text-[#6750A4]" /> : <Monitor className="w-4 h-4 text-[#6750A4]" />}
+          <span className="text-[11px] font-medium">{isWideLayout ? 'Mobile' : 'Desktop'}</span>
+        </button>
+
+        {/* Material 3 Filled Tonal Button: Host & Share */}
         <button
           onClick={onOpenInstallModal}
-          className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer"
-          title="Install on your phone or get APK"
+          className="h-9 px-3.5 rounded-full bg-[#EADDFF] hover:bg-[#D0BCFF] text-[#21005D] text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+          title="Share website link or get app"
         >
-          <span className="text-[11px]">Install App</span>
+          <Share2 className="w-3.5 h-3.5 text-[#6750A4]" />
+          <span className="hidden sm:inline">Share & Host</span>
+          <span className="sm:hidden">Share</span>
         </button>
 
-        {/* Test on 2 Devices Button */}
+        {/* Material 3 IconButton: Test 2 Devices */}
         <button
           onClick={onOpenTwoDevicesModal}
-          className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+          className="w-10 h-10 rounded-full hover:bg-[#1D1B20]/8 active:bg-[#1D1B20]/12 flex items-center justify-center text-[#49454F] hover:text-[#1D1B20] transition-colors cursor-pointer"
           title="Test with two devices (QR Code)"
         >
-          <QrCode className="w-3.5 h-3.5 text-purple-600" />
-          <span className="text-[11px] hidden sm:inline">2 Devices</span>
+          <QrCode className="w-5 h-5" />
         </button>
 
-        {/* Sound toggle */}
+        {/* Material 3 IconButton: Sound */}
         <button
           onClick={onToggleSound}
-          className={`p-2 rounded-xl text-xs border transition-all active:scale-95 ${
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
             soundEnabled
-              ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
-              : 'bg-rose-50 text-rose-500 border-rose-200'
+              ? 'hover:bg-[#1D1B20]/8 active:bg-[#1D1B20]/12 text-[#49454F]'
+              : 'bg-[#FFDAD6] text-[#410002]'
           }`}
           title={soundEnabled ? 'Mute Sound FX' : 'Enable Sound FX'}
         >
-          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
         </button>
 
-        {/* Safety Guide */}
+        {/* Material 3 IconButton: Safety */}
         <button
           onClick={onOpenSafetyGuide}
-          className="p-2 rounded-xl text-xs bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100 transition-all active:scale-95"
-          title="Safety & Rules"
+          className="w-10 h-10 rounded-full hover:bg-[#1D1B20]/8 active:bg-[#1D1B20]/12 flex items-center justify-center text-[#49454F] hover:text-[#1D1B20] transition-colors cursor-pointer"
+          title="Safety Rules"
         >
-          <Shield className="w-4 h-4" />
+          <Shield className="w-5 h-5" />
         </button>
       </div>
     </header>

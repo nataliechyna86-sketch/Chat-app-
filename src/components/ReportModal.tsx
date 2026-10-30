@@ -33,7 +33,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white border border-purple-100 rounded-3xl max-w-sm w-full p-5 shadow-2xl relative text-slate-900">
+      <div className="bg-white border border-purple-100 rounded-3xl max-w-sm w-full p-4 sm:p-5 shadow-2xl relative text-slate-900 max-h-[90vh] overflow-y-auto">
         
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-purple-100">

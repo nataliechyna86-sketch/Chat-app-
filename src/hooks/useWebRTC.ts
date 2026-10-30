@@ -358,7 +358,17 @@ export function useWebRTC({ onSignal }: UseWebRTCProps) {
     const nextIndex = (currentIndex + 1) % availableCameras.length;
     const nextDevice = availableCameras[nextIndex];
     setCurrentCameraId(nextDevice.deviceId);
-    await initLocalMedia(nextDevice.deviceId);
+    const newStream = await initLocalMedia(nextDevice.deviceId);
+    if (newStream && peerConnectionRef.current) {
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      if (newVideoTrack) {
+        const senders = peerConnectionRef.current.getSenders();
+        const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+        if (videoSender) {
+          videoSender.replaceTrack(newVideoTrack).catch(() => {});
+        }
+      }
+    }
   }, [availableCameras, currentCameraId, initLocalMedia]);
 
   return {

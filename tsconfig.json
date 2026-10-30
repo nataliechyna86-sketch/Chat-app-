@@ -24,5 +24,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "exclude": ["node_modules", "expo-android-app"]
+  "include": ["src/**/*", "server.ts", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "expo-android-app"]
 }

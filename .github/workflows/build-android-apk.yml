@@ -1,13 +1,26 @@
-name: Build Android APK (React Native)
+name: Build Android APK (Mochii)
 
 on:
   push:
     branches:
       - main
+      - master
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
+      - master
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build variant (release or debug)'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,13 +28,17 @@ concurrency:
 
 jobs:
   build-android:
-    name: 📱 Build Android APK
+    name: 📱 Build Mochii Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write
 
     steps:
       - name: 🛎️ Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: ☕ Set up Java JDK 17
         uses: actions/setup-java@v4
@@ -36,16 +53,18 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'expo-android-app/package.json'
 
-      - name: 📱 Set up Android SDK Tools
-        uses: android-actions/setup-android@v3
-
-      - name: 📝 Accept Android SDK Licenses
+      - name: 📱 Configure Android SDK & Accept Licenses
         run: |
+          echo "ANDROID_HOME: $ANDROID_HOME"
           mkdir -p "$ANDROID_HOME/licenses"
+          # Pre-seed accepted license hashes
           echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-license"
-          yes | sdkmanager --licenses || true
+          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b816f454d0e" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+          if [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          fi
 
-      - name: 📦 Install Expo App Dependencies
+      - name: 📦 Install App Dependencies
         working-directory: expo-android-app
         run: |
           npm install --legacy-peer-deps
@@ -55,41 +74,83 @@ jobs:
         with:
           cache-read-only: false
 
-      - name: 🔨 Build Android APK with Gradle
+      - name: 🔨 Determine Build Task
+        id: build_task
+        run: |
+          BUILD_TYPE="${{ inputs.build_type || 'release' }}"
+          if [ "$BUILD_TYPE" = "debug" ]; then
+            echo "task=assembleDebug" >> $GITHUB_OUTPUT
+            echo "variant=debug" >> $GITHUB_OUTPUT
+          else
+            echo "task=assembleRelease" >> $GITHUB_OUTPUT
+            echo "variant=release" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚀 Compile Android APK with Gradle
         working-directory: expo-android-app/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+          ./gradlew ${{ steps.build_task.outputs.task }} --no-daemon --stacktrace \
+            -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
 
-      - name: 🔍 Locate Generated APK
+      - name: 🔍 Locate and Package Generated APK
         id: locate_apk
         run: |
           echo "Searching for generated APK files..."
           find expo-android-app/android/app/build/outputs/apk -type f -name "*.apk" -ls
           
-          PRIMARY_APK=$(find expo-android-app/android/app/build/outputs/apk -type f -name "*.apk" | head -n 1)
-          if [ -z "$PRIMARY_APK" ]; then
+          VARIANT="${{ steps.build_task.outputs.variant }}"
+          RAW_APK=$(find expo-android-app/android/app/build/outputs/apk -type f -name "*${VARIANT}*.apk" | head -n 1)
+          
+          # Fallback to any APK if variant-specific filename not matched
+          if [ -z "$RAW_APK" ]; then
+            RAW_APK=$(find expo-android-app/android/app/build/outputs/apk -type f -name "*.apk" | head -n 1)
+          fi
+          
+          if [ -z "$RAW_APK" ]; then
             echo "::error::No APK file found in build output!"
             exit 1
           fi
-          echo "Found APK: $PRIMARY_APK"
-          echo "apk_path=$PRIMARY_APK" >> $GITHUB_OUTPUT
+
+          # Standardize filename
+          FINAL_APK="mochii-${VARIANT}.apk"
+          cp "$RAW_APK" "$FINAL_APK"
+          
+          echo "Found APK: $RAW_APK"
+          echo "Packaged as: $FINAL_APK"
+          echo "apk_path=$FINAL_APK" >> $GITHUB_OUTPUT
+          echo "apk_name=$FINAL_APK" >> $GITHUB_OUTPUT
 
       - name: 📤 Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ChatPulse-Android-APK
+          name: Mochii-Android-APK
           path: ${{ steps.locate_apk.outputs.apk_path }}
           if-no-files-found: error
           retention-days: 30
 
+      - name: 🏷️ Create GitHub Release (If tagged commit)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.locate_apk.outputs.apk_path }}
+          name: Mochii Release ${{ github.ref_name }}
+          body: |
+            ### 📱 Mochii Android App Release (${{ github.ref_name }})
+            
+            - **Download APK directly below** and install on your Android device.
+            - Includes instant 1-on-1 WebRTC video chat & Google AdMob integration.
+          draft: false
+          prerelease: false
+
       - name: 📋 Build Summary
         run: |
-          echo "### 🚀 Android APK Build Succeeded!" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Mochii Android APK Build Succeeded!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Your installable Android APK is ready." >> $GITHUB_STEP_SUMMARY
-          echo "- **Artifact Name**: \`ChatPulse-Android-APK\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Package**: \`com.chatpulse.videochat\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact**: \`${{ steps.locate_apk.outputs.apk_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Variant**: \`${{ steps.build_task.outputs.variant }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package ID**: \`com.mochii.videochat\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Permissions**: Camera, Microphone, Network" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "You can download the APK directly from the **Artifacts** section of this GitHub Actions run and install it on your Android phone!" >> $GITHUB_STEP_SUMMARY
+          echo "👉 **How to download your APK:**" >> $GITHUB_STEP_SUMMARY
+          echo "Go to the **Actions** tab on your GitHub repository, click on this run, scroll down to **Artifacts**, and click **Mochii-Android-APK** to download." >> $GITHUB_STEP_SUMMARY
