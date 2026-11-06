@@ -119,10 +119,20 @@ export default function App() {
     onSignal: sendSignal,
   });
 
-  // Connect WebSocket
+  // Connect WebSocket & signaling backend
   useEffect(() => {
+    const isLocalDev = window.location.hostname === 'localhost' && window.location.port === '3000';
+    const backendHost = isLocalDev 
+      ? window.location.host 
+      : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'ais-pre-ollmggw5fqklgkr5otu3h2-808300536981.europe-west2.run.app'
+      : window.location.host;
+
+    const protocol = isLocalDev ? 'ws:' : 'wss:';
+    const httpProtocol = isLocalDev ? 'http:' : 'https:';
+
     // Fetch live real server stats immediately
-    fetch('/api/stats')
+    fetch(`${httpProtocol}//${backendHost}/api/stats`)
       .then(res => res.json())
       .then(data => {
         if (typeof data.onlineUsers === 'number') {
@@ -131,8 +141,7 @@ export default function App() {
       })
       .catch(() => {});
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsUrl = `${protocol}//${backendHost}/ws`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 

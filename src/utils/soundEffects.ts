@@ -1,8 +1,15 @@
-// Web Audio API synthesizer for instant zero-dependency sound effects
+// Web Audio API synthesizer + Native Capacitor Haptics
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 class SoundFX {
   private ctx: AudioContext | null = null;
   public enabled: boolean = true;
+
+  private triggerHaptic(style: ImpactStyle = ImpactStyle.Medium) {
+    try {
+      Haptics.impact({ style }).catch(() => {});
+    } catch {}
+  }
 
   private getContext(): AudioContext | null {
     if (!this.enabled) return null;
@@ -21,6 +28,7 @@ class SoundFX {
 
   // Play a match found sound (upbeat chime)
   playMatchFound() {
+    this.triggerHaptic(ImpactStyle.Heavy);
     const ctx = this.getContext();
     if (!ctx) return;
     try {

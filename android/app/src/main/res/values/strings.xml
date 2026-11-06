@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">mochii</string>
+    <string name="title_activity_main">mochii</string>
+    <string name="package_name">com.mochii.videochat</string>
+    <string name="custom_url_scheme">com.mochii.videochat</string>
+</resources>

@@ -1,0 +1,107 @@
+name: Build Capacitor Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build variant (debug or release)'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-capacitor:
+    name: 📱 Build Capacitor Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: ☕ Set up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🟢 Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Project Dependencies
+        run: |
+          npm install
+
+      - name: 🏗️ Build Web Distribution
+        run: |
+          npm run build
+
+      - name: ⚡ Sync Capacitor Android Platform
+        run: |
+          npx cap sync android
+
+      - name: 🐘 Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 🔨 Compile Android APK with Gradle
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: 🔍 Locate and Package APK
+        id: locate_apk
+        run: |
+          echo "Searching for generated Capacitor APK..."
+          find android/app/build/outputs/apk -type f -name "*.apk" -ls
+          
+          RAW_APK=$(find android/app/build/outputs/apk -type f -name "*.apk" | head -n 1)
+          if [ -z "$RAW_APK" ]; then
+            echo "::error::No APK file found in build output!"
+            exit 1
+          fi
+
+          FINAL_APK="mochii-capacitor-android.apk"
+          cp "$RAW_APK" "$FINAL_APK"
+          echo "Found APK: $RAW_APK"
+          echo "apk_path=$FINAL_APK" >> $GITHUB_OUTPUT
+          echo "apk_name=$FINAL_APK" >> $GITHUB_OUTPUT
+
+      - name: 📤 Upload Capacitor APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mochii-Capacitor-Android-APK
+          path: ${{ steps.locate_apk.outputs.apk_path }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 📋 Build Summary
+        run: |
+          echo "### 🚀 Mochii Capacitor Android APK Build Succeeded!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **App Name**: Mochii" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact**: \`${{ steps.locate_apk.outputs.apk_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package ID**: \`com.mochii.videochat\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Native Features**: WebRTC Camera, Microphone, Haptic Vibrations" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "👉 **Download instructions:** Go to the **Actions** tab on your GitHub repository, click on this run, scroll down to **Artifacts**, and click **Mochii-Capacitor-Android-APK** to install directly on your Android phone!" >> $GITHUB_STEP_SUMMARY
